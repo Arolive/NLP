@@ -5,8 +5,8 @@ try:
     import random
     import pickle
     import warnings
-    import utils.BuildVocab as BuildVocab
     import numpy as np
+    import utils.BuildVocab as BuildVocab
     warnings.filterwarnings("ignore")
     from gensim.models import Word2Vec
     from gensim.models.keyedvectors import KeyedVectors
@@ -23,18 +23,35 @@ class Model():
         self.WINDOW = 300
         self.ALPHA = 0.001
         self.Method = 1
+        
+        while True:
+            print("To use pre-trained model,      Press: P")
+            print("To use own data trained model, Press: T")
 
-        self.inputPath = "../lib/Output/vocab/"
-        self.outputPath = "../lib/Output/weights/"
+            self.choice = input().lower()
+            if self.choice == "p":
+                initPretrained()
+                break
+            elif self.choice == "t":
+                initTraining()
+                break
+            else:
+                print("Incorrect input, Please Try again\n")
+            
+    def initPretrained():
+        self.inputPath = "../lib/Pretrained/vocab/"
+        self.outputPath = "../lib/Pretrained/weights/"
+        
         if not os.path.exists(os.path.dirname(self.inputPath)):
-            print("Generating vocabulary..")
-            BuildVocab.main()
+            print("Pretrained files not found,\nPlease contact developer")
+            sys.exit()
         else:
-            print("Vocabulary found\nLoading...")
+            print("Loading Vocabulary...")
+            
         with open(self.inputPath + "inProcessed.p", 'rb') as f:
             self.inProcessed = pickle.load(f)
-#         with open(self.inputPath + "outProcessed.p", 'rb') as f:
-#             self.outProcessed = pickle.load(f)
+        #with open(self.inputPath + "outProcessed.p", 'rb') as f:
+        #    self.outProcessed = pickle.load(f)
         with open(self.inputPath + "inWordCount.p", 'rb') as f:
             self.inWordCount = pickle.load(f)
         with open(self.inputPath + "inDic.p", 'rb') as f:
@@ -43,20 +60,59 @@ class Model():
             self.mappingDic = pickle.load(f)
         with open(self.inputPath + "outDicMap.p", 'rb') as f:
             self.outDicMap = pickle.load(f)
+            
+        if not os.path.exists(os.path.dirname(self.outputPath)): 
+            print("Pretrained files not found,\nPlease contact developer")
+            sys.exit()
+        else:
+            print("Trained weights found\nLoading...")
+            self.model = KeyedVectors.load_word2vec_format(self.outputPath + "word2vecWeights.txt", binary=False)
+            print("Weights loaded successfully\n")     
+        
+    def initTraining():
+        self.inputPath = "../lib/Output/vocab/"
+        self.outputPath = "../lib/Output/weights/"
 
+        #self.preinputPath = "../lib/Pretrained/vocab/"
+        #self.preoutputPath = "../lib/Pretrained/weights/"
+        
+            
+        if not os.path.exists(os.path.dirname(self.inputPath)):
+            print("Generating vocabulary")
+            BuildVocab.main()
+        else:
+            print("Loading Vocabulary...")
+        
+        ## Loading user data
+        with open(self.inputPath + "inProcessed.p", 'rb') as f:
+            self.inProcessed = pickle.load(f)
+        #with open(self.inputPath + "outProcessed.p", 'rb') as f:
+        #    self.outProcessed = pickle.load(f)
+        with open(self.inputPath + "inWordCount.p", 'rb') as f:
+            self.inWordCount = pickle.load(f)
+        with open(self.inputPath + "inDic.p", 'rb') as f:
+            self.inDic = pickle.load(f)
+        with open(self.inputPath + "mappingDic.p", 'rb') as f:
+            self.mappingDic = pickle.load(f)
+        with open(self.inputPath + "outDicMap.p", 'rb') as f:
+            self.outDicMap = pickle.load(f)
+            
+        ## Loading pre defined data
         if not os.path.exists(os.path.dirname(self.outputPath)): 
             try:
                 os.makedirs(os.path.dirname(self.outputPath))
             except OSError as exc: # Guard against race condition
                 if exc.errno != errno.EEXIST:
                     raise
-            print("Model training under process...")
+            print("Model training under process")
             self.model = self.trainModel()
-            self.model.wv.save_word2vec_format(self.outputPath + "word2vecWeights.txt", binary=False)  
+            self.model.wv.save_word2vec_format(self.outputPath + "word2vecWeights.txt", binary=False)
+            print("Model trained successfully\n")
         else:
-            print("Trained weights found\nLoading..")
+            print("Trained weights found\nLoading...")
             self.model = KeyedVectors.load_word2vec_format(self.outputPath + "word2vecWeights.txt", binary=False)
-            print("Weights loaded successfully")
+            print("Weights loaded successfully\n")
+            
     ## Function to training a word2vec model    
     def trainModel(self):
         trainData = list(i.split() for i in self.inProcessed)
@@ -118,22 +174,13 @@ class Model():
         replies = []
         closestMsg = self.getCloseMsg(newMsg)
         if closestMsg == None:
-            return(botimoji + "Sorry, I didnot get you..")
+            return(botimoji + "Sorry, I did not get you..")
         index = self.inDic[closestMsg]
         repliesindex = self.mappingDic[index]
         for i in repliesindex:
             replies.append(self.outDicMap[i])
         
         return(botimoji + random.choice(replies))
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     
